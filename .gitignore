@@ -17,4 +17,7 @@ __pycache__/
 logs/
 *.egg-info/
 
+.idea/
+stacks.md
+
 outputs
