@@ -1,0 +1,42 @@
+
+
+services:
+  db:
+    build:
+      context: ./docker/postgres
+      dockerfile: Dockerfile.db
+    image: vitality-hub-db:v1.0
+    container_name: vitality-db
+    environment:
+      POSTGRES_DB: vitality
+      POSTGRES_USER: vitality_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vitality_dev_pw}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vitality_user -d vitality"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: vitality-hub-api:v1.0
+    container_name: vitality-api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://vitality_user:${POSTGRES_PASSWORD:-vitality_dev_pw}@db:5432/vitality
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data:ro
+volumes:
+  pgdata:
